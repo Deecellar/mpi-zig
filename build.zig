@@ -193,8 +193,6 @@ fn configureOpenMpi(module: *std.Build.Module) void {
     module.linkSystemLibrary("mpi", .{});
 
     // OpenMPI may need additional libraries
-    module.linkSystemLibrary("open-rte", .{});
-    module.linkSystemLibrary("open-pal", .{});
 
     // Add OpenMPI specific definitions
     module.addCMacro("OMPI_SKIP_MPICXX", "1");
