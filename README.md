@@ -2,28 +2,38 @@
 
 A comprehensive Zig wrapper for MPI (Message Passing Interface) that provides idiomatic Zig bindings for parallel computing applications.
 
-TODO: Library has quirks on the API design, still under development.
+Cross-platform support for Windows (Microsoft MPI), Linux (OpenMPI/MPICH), and macOS with automatic MPI implementation detection.
 
 ## Installation
 
-This library requires Zig 0.15+ and an MPI implementation (Microsoft MPI on Windows, OpenMPI/MPICH on Linux/macOS).
+### Prerequisites
+- Zig 0.16+
+- MPI implementation:
+  - Windows: Microsoft MPI
+  - Linux: OpenMPI or MPICH  
+  - macOS: OpenMPI (via Homebrew)
 
-### Windows (Microsoft MPI)
+### Setup
+
+#### Windows (Microsoft MPI)
 1. Install Microsoft MPI from the official Microsoft website
 2. Clone this repository
 3. Build with `zig build`
 
-### Linux/macOS (OpenMPI/MPICH)
+#### Linux (OpenMPI/MPICH)
 ```bash
 # Ubuntu/Debian
 sudo apt-get install libopenmpi-dev
+
+# RHEL/CentOS/Fedora
+sudo yum install openmpi-devel
 
 # macOS with Homebrew  
 brew install open-mpi
 
 # Clone and build
-git clone <repository-url>
-cd zig-mpi
+git clone https://github.com/Deecellar/mpi-zig.git
+cd mpi-zig
 zig build
 ```
 
@@ -73,6 +83,10 @@ const global_sum = try mpi.convenience.parallelSum(f64, local_value, comm);
 
 ### Non-blocking Communication
 ```zig
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
 var request_manager = mpi.RequestManager.init(allocator);
 defer request_manager.deinit();
 
@@ -85,12 +99,12 @@ try request_manager.add(req2);
 
 // Wait for completion
 var statuses = try request_manager.waitAll();
-defer statuses.deinit();
+defer statuses.deinit(allocator);
 ```
 
 ## Examples
 
-The repository includes comprehensive examples demonstrating:
+The repository includes comprehensive examples demonstrating various MPI patterns:
 
 - **01_hello_world.zig** - Basic MPI initialization and rank identification
 - **02_point_to_point.zig** - Send/receive operations between processes
@@ -102,13 +116,50 @@ The repository includes comprehensive examples demonstrating:
 - **08_error_handling.zig** - Error handling and recovery patterns
 - **09_advanced_patterns.zig** - Complex communication patterns
 
-Run examples with:
-```bash
-# Single process (for testing)
-zig build run-hello
+### Running Examples
 
-# Multiple processes
-mpiexec -n 4 zig-out/bin/mpi-example-hello.exe
+Single process (testing):
+```bash
+zig build run-hello
+zig build run-point-to-point
+zig build run-collective
+zig build run-non-blocking
+```
+
+Multiple processes:
+```bash
+# 2 processes
+zig build mpi2-hello
+zig build mpi2-point-to-point
+
+# 4 processes
+zig build mpi4-collective
+zig build mpi4-monte-carlo
+
+# 8 processes
+zig build mpi8-benchmark
+```
+
+Manual execution:
+```bash
+mpirun -np 4 ./zig-out/bin/mpi-example-hello
+```
+
+## Build Configuration
+
+Custom MPI path:
+```bash
+zig build -Dmpi-path=/custom/mpi/path
+```
+
+Specify MPI implementation:
+```bash
+zig build -Dmpi-impl=openmpi    # or msmpi, mpich, intel
+```
+
+Enable optional features:
+```bash
+zig build -Denable-cuda=true -Denable-profiling=true
 ```
 
 ## API Reference
@@ -118,6 +169,8 @@ mpiexec -n 4 zig-out/bin/mpi-example-hello.exe
 - `mpi.Communicator` - Communication context
 - `mpi.CommParams` - Communication parameters builder
 - `mpi.RequestManager` - Non-blocking operation management
+- `mpi.Timer` - High-precision timing utilities
+- `mpi.Status` - Message status inspection
 
 ### Key Functions
 - `send()` / `recv()` - Blocking point-to-point communication
@@ -127,14 +180,44 @@ mpiexec -n 4 zig-out/bin/mpi-example-hello.exe
 - `gather()` / `allGather()` - Gather operations
 - `scatter()` - Scatter operations
 
+### Convenience Functions
+- `mpi.convenience.parallelSum()` - Parallel sum reduction
+- `mpi.convenience.parallelMax()` / `parallelMin()` - Parallel extrema
+- `mpi.convenience.exchange()` - Deadlock-free process exchange
+- `mpi.convenience.timing.syncTime()` - Synchronized timing
+
+## Platform Support
+
+| Platform | MPI Implementation | Status |
+|----------|-------------------|---------|
+| Windows 10/11 | Microsoft MPI | Fully supported |
+| Linux (Ubuntu/Debian) | OpenMPI | Fully supported |
+| Linux (RHEL/CentOS) | OpenMPI/MPICH | Supported |
+| macOS | OpenMPI (Homebrew) | Supported |
+| Linux | MPICH | Supported |
+| Linux/Windows | Intel MPI | Experimental |
+
+## Testing
+
+```bash
+# Run unit tests
+zig build test
+
+# Format code
+zig build fmt
+
+# Check syntax
+zig build check
+```
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-Please make sure to update tests as appropriate and ensure compatibility with multiple MPI implementations.
+Please ensure compatibility with multiple MPI implementations and follow Zig conventions for naming and error handling.
 
 ### Development Setup
-1. Install Zig 0.15+ and MPI implementation
+1. Install Zig 0.16+ and MPI implementation
 2. Run `zig build` to compile library and examples
 3. Run `zig build test` to execute test suite
 4. Test with multiple MPI implementations when possible
