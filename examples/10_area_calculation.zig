@@ -12,10 +12,11 @@ fn f(x: f64) f64 {
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    
+
     const start_x: f64 = 0.0;
     const end_x: f64 = 324.0;
     const total_steps: i32 = std.math.maxInt(i32);
+    const step_size = (end_x - start_x) / @as(f64, @floatFromInt(total_steps));
 
 
     // Initialize MPI environment
@@ -37,7 +38,6 @@ pub fn main() !void {
 
     // Distribute the integration steps among processes
     const work = try comm.distributeWork(total_steps);
-    const step_size = (end_x - start_x) / @as(f64, @floatFromInt(total_steps));
 
     // Synchronize before timing the computation
     try comm.barrier();
