@@ -12,6 +12,11 @@ fn f(x: f64) f64 {
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
+    
+    const start_x: f64 = 0.0;
+    const end_x: f64 = 324.0;
+    const total_steps: i32 = std.math.maxInt(i32);
+
 
     // Initialize MPI environment
     var env = mpi.Environment{};
@@ -23,9 +28,7 @@ pub fn main() !void {
     const world_size = try comm.getSize();
 
     // Integration parameters
-    const start_x: f64 = 0.0;
-    const end_x: f64 = 2.0;
-    const total_steps: i32 = std.math.maxInt(i32);
+
 
     if (my_rank == 0) {
         std.debug.print("Starting parallel area calculation for f(x) = x^2\n", .{});
