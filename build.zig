@@ -44,6 +44,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "benchmark", .file = "examples/07_benchmark.zig", .description = "Performance benchmarking" },
         .{ .name = "error-handling", .file = "examples/08_error_handling.zig", .description = "Error handling demonstration" },
         .{ .name = "advanced", .file = "examples/09_advanced_patterns.zig", .description = "Advanced MPI patterns" },
+        .{ .name = "integrate", .file = "examples/10_area_calculation.zig", .description = "Parallel function integration" },
     };
 
     for (examples) |example| {
