@@ -242,8 +242,8 @@ fn detectMpiPath(b: *std.Build) []const u8 {
     if (host_target.os.tag == .windows) {
         // Common Microsoft MPI paths
         // Build comprehensive list of potential Microsoft MPI installation paths
-        var msmpi_paths = std.ArrayList([]const u8).init(b.allocator);
-        defer msmpi_paths.deinit();
+        var msmpi_paths = std.ArrayList([]const u8){};
+        defer msmpi_paths.deinit(b.allocator);
 
         // Standard Microsoft MPI installation paths
         const standard_paths = [_][]const u8{
@@ -267,23 +267,23 @@ fn detectMpiPath(b: *std.Build) []const u8 {
                     };
                     for (mpi_suffixes) |suffix| {
                         const full_path = b.fmt("{s}\\{s}", .{ base_path, suffix });
-                        msmpi_paths.append(b.dupe(full_path)) catch continue;
+                        msmpi_paths.append(b.allocator, b.dupe(full_path)) catch continue;
                     }
                 } else {
-                    msmpi_paths.append(b.dupe(base_path)) catch continue;
+                    msmpi_paths.append(b.allocator, b.dupe(base_path)) catch continue;
                 }
             } else |_| {}
         }
 
         // Add all standard paths
         for (standard_paths) |path| {
-            msmpi_paths.append(path) catch continue;
+            msmpi_paths.append(b.allocator, path) catch continue;
         }
 
         // Registry-based detection (Windows-specific)
         const registry_paths = detectMpiFromRegistry(b);
         for (registry_paths) |path| {
-            msmpi_paths.append(path) catch continue;
+            msmpi_paths.append(b.allocator, path) catch continue;
         }
 
         // Check common version-specific paths
@@ -294,11 +294,11 @@ fn detectMpiPath(b: *std.Build) []const u8 {
             "C:\\Program Files (x86)\\Microsoft MPI\\V10.0",
         };
         for (version_paths) |path| {
-            msmpi_paths.append(path) catch continue;
+            msmpi_paths.append(b.allocator, path) catch continue;
         }
 
         // Convert to slice for iteration
-        const paths_slice = msmpi_paths.toOwnedSlice() catch &[_][]const u8{};
+        const paths_slice = msmpi_paths.toOwnedSlice(b.allocator) catch &[_][]const u8{};
         defer b.allocator.free(paths_slice);
 
         // Find first valid path with proper validation
@@ -420,7 +420,7 @@ fn detectMpiFromRegistry(b: *std.Build) [][]const u8 {
     // On Windows, we can try to read registry entries for Microsoft MPI
     // This is a simplified version - in production you'd use proper Windows API calls
 
-    var registry_paths = std.ArrayList([]const u8).init(b.allocator);
+    var registry_paths = std.ArrayList([]const u8){};
 
     // Common registry-based paths where Microsoft MPI might be installed
     // These are typical locations that installers might use
@@ -439,11 +439,11 @@ fn detectMpiFromRegistry(b: *std.Build) [][]const u8 {
 
     for (potential_registry_paths) |path| {
         if (pathExists(b, path)) {
-            registry_paths.append(b.dupe(path)) catch continue;
+            registry_paths.append(b.allocator, b.dupe(path)) catch continue;
         }
     }
 
-    return registry_paths.toOwnedSlice() catch &[_][]const u8{};
+    return registry_paths.toOwnedSlice(b.allocator) catch &[_][]const u8{};
 }
 
 /// Cross-compilation support for various platforms

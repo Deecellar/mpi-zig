@@ -134,26 +134,51 @@ inline fn checkMpiResult(result: c_int) MpiError!void {
     }
 }
 
+/// Platform-specific MPI datatype mapping
+fn getMpiDatatypeImpl(comptime T: type) c.MPI_Datatype {
+    if (builtin.os.tag == .windows) {
+        // Windows/MSMPI uses direct constants
+        return switch (T) {
+            i8 => c.MPI_INT8_T,
+            u8 => c.MPI_UINT8_T,
+            i16 => c.MPI_INT16_T,
+            u16 => c.MPI_UINT16_T,
+            i32 => c.MPI_INT32_T,
+            u32 => c.MPI_UINT32_T,
+            i64 => c.MPI_INT64_T,
+            u64 => c.MPI_UINT64_T,
+            f32 => c.MPI_FLOAT,
+            f64 => c.MPI_DOUBLE,
+            c_int => c.MPI_INT,
+            bool => c.MPI_C_BOOL,
+            else => @compileError("Unsupported MPI datatype for type: " ++ @typeName(T)),
+        };
+    } else {
+        // OpenMPI on Linux uses global variables
+        return switch (T) {
+            i8 => @ptrCast(&c.ompi_mpi_int8_t),
+            u8 => @ptrCast(&c.ompi_mpi_uint8_t),
+            i16 => @ptrCast(&c.ompi_mpi_int16_t),
+            u16 => @ptrCast(&c.ompi_mpi_uint16_t),
+            i32 => @ptrCast(&c.ompi_mpi_int32_t),
+            u32 => @ptrCast(&c.ompi_mpi_uint32_t),
+            i64 => @ptrCast(&c.ompi_mpi_int64_t),
+            u64 => @ptrCast(&c.ompi_mpi_uint64_t),
+            f32 => @ptrCast(&c.ompi_mpi_float),
+            f64 => @ptrCast(&c.ompi_mpi_double),
+            c_int => @ptrCast(&c.ompi_mpi_int),
+            bool => @ptrCast(&c.ompi_mpi_c_bool),
+            else => @compileError("Unsupported MPI datatype for type: " ++ @typeName(T)),
+        };
+    }
+}
+
 /// Maps Zig types to corresponding MPI datatypes at compile time.
 /// Supports all standard integer, floating-point, and boolean types.
 /// Assumes type T is supported by the underlying MPI implementation.
 /// Compile error if type is not supported.
 pub fn getMpiDatatype(comptime T: type) c.MPI_Datatype {
-    return switch (T) {
-        i8 => c.MPI_INT8_T,
-        u8 => c.MPI_UINT8_T,
-        i16 => c.MPI_INT16_T,
-        u16 => c.MPI_UINT16_T,
-        i32 => c.MPI_INT32_T,
-        u32 => c.MPI_UINT32_T,
-        i64 => c.MPI_INT64_T,
-        u64 => c.MPI_UINT64_T,
-        f32 => c.MPI_FLOAT,
-        f64 => c.MPI_DOUBLE,
-        c_int => c.MPI_INT,
-        bool => c.MPI_C_BOOL,
-        else => @compileError("Unsupported MPI datatype for type: " ++ @typeName(T)),
-    };
+    return getMpiDatatypeImpl(T);
 }
 
 /// Thread support levels available in MPI implementations.
@@ -165,23 +190,117 @@ pub const ThreadSupport = enum(c_int) {
     multiple = c.MPI_THREAD_MULTIPLE,
 };
 
+/// Platform-specific MPI operation mapping
+const MpiOps = struct {
+    pub fn getMax() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_MAX;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_max);
+        }
+    }
+    
+    pub fn getMin() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_MIN;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_min);
+        }
+    }
+    
+    pub fn getSum() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_SUM;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_sum);
+        }
+    }
+    
+    pub fn getProd() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_PROD;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_prod);
+        }
+    }
+    
+    pub fn getLand() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_LAND;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_land);
+        }
+    }
+    
+    pub fn getBand() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_BAND;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_band);
+        }
+    }
+    
+    pub fn getLor() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_LOR;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_lor);
+        }
+    }
+    
+    pub fn getBor() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_BOR;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_bor);
+        }
+    }
+    
+    pub fn getLxor() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_LXOR;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_lxor);
+        }
+    }
+    
+    pub fn getBxor() c.MPI_Op {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_BXOR;
+        } else {
+            return @ptrCast(&c.ompi_mpi_op_bxor);
+        }
+    }
+};
+
 /// MPI reduction operations for collective computations.
 /// Each operation defines how values are combined across processes.
-pub const Operation = enum(c.MPI_Op) {
-    max = c.MPI_MAX,
-    min = c.MPI_MIN,
-    sum = c.MPI_SUM,
-    prod = c.MPI_PROD,
-    land = c.MPI_LAND,
-    band = c.MPI_BAND,
-    lor = c.MPI_LOR,
-    bor = c.MPI_BOR,
-    lxor = c.MPI_LXOR,
-    bxor = c.MPI_BXOR,
+pub const Operation = enum {
+    max,
+    min,
+    sum,
+    prod,
+    land,
+    band,
+    lor,
+    bor,
+    lxor,
+    bxor,
 
     /// Converts Operation enum to MPI C constant.
     pub fn toC(self: Operation) c.MPI_Op {
-        return @intFromEnum(self);
+        return switch (self) {
+            .max => MpiOps.getMax(),
+            .min => MpiOps.getMin(),
+            .sum => MpiOps.getSum(),
+            .prod => MpiOps.getProd(),
+            .land => MpiOps.getLand(),
+            .band => MpiOps.getBand(),
+            .lor => MpiOps.getLor(),
+            .bor => MpiOps.getBor(),
+            .lxor => MpiOps.getLxor(),
+            .bxor => MpiOps.getBxor(),
+        };
     }
 };
 
@@ -327,12 +446,33 @@ pub const CommParams = struct {
     pub const any_tag = -1; // Use with withTag
 };
 
+/// Platform-specific MPI constants abstraction
+const MpiConstants = struct {
+    pub fn getCommWorld() c.MPI_Comm {
+        if (builtin.os.tag == .windows) {
+            // Windows/MSMPI uses direct constants
+            return c.MPI_COMM_WORLD;
+        } else {
+            // OpenMPI on Linux uses global variables
+            return @ptrCast(&c.ompi_mpi_comm_world);
+        }
+    }
+    
+    pub fn getCommSelf() c.MPI_Comm {
+        if (builtin.os.tag == .windows) {
+            return c.MPI_COMM_SELF;
+        } else {
+            return @ptrCast(&c.ompi_mpi_comm_self);
+        }
+    }
+};
+
 /// Main MPI Communicator with improved API
 pub const Communicator = struct {
     comm: c.MPI_Comm,
 
-    pub const world = Communicator{ .comm = c.MPI_COMM_WORLD };
-    pub const self_comm = Communicator{ .comm = c.MPI_COMM_SELF };
+    pub const world = Communicator{ .comm = MpiConstants.getCommWorld() };
+    pub const self_comm = Communicator{ .comm = MpiConstants.getCommSelf() };
 
     /// Get process rank
     pub fn getRank(self: Communicator) MpiError!i32 {
@@ -714,22 +854,22 @@ pub const RequestManager = struct {
 
     pub fn init(allocator: std.mem.Allocator) RequestManager {
         return RequestManager{
-            .requests = std.ArrayList(Request).init(allocator),
+            .requests = std.ArrayList(Request){},
             .allocator = allocator,
         };
     }
 
     pub fn deinit(self: *RequestManager) void {
-        self.requests.deinit();
+        self.requests.deinit(self.allocator);
     }
 
     pub fn add(self: *RequestManager, request: Request) !void {
-        try self.requests.append(request);
+        try self.requests.append(self.allocator, request);
     }
 
     pub fn waitAll(self: *RequestManager) !std.ArrayList(Status) {
-        var statuses = std.ArrayList(Status).init(self.allocator);
-        try statuses.ensureTotalCapacity(self.requests.items.len);
+        var statuses = std.ArrayList(Status){};
+        try statuses.ensureTotalCapacity(self.allocator, self.requests.items.len);
 
         for (self.requests.items) |*request| {
             const status = try request.wait();
@@ -741,8 +881,8 @@ pub const RequestManager = struct {
     }
 
     pub fn testAll(self: *RequestManager) !?std.ArrayList(Status) {
-        var statuses = std.ArrayList(Status).init(self.allocator);
-        try statuses.ensureTotalCapacity(self.requests.items.len);
+        var statuses = std.ArrayList(Status){};
+        try statuses.ensureTotalCapacity(self.allocator, self.requests.items.len);
 
         var all_complete = true;
         for (self.requests.items) |*request| {
@@ -758,7 +898,7 @@ pub const RequestManager = struct {
             self.requests.clearRetainingCapacity();
             return statuses;
         } else {
-            statuses.deinit();
+            statuses.deinit(self.allocator);
             return null;
         }
     }
@@ -791,7 +931,7 @@ test "MPI datatype mapping" {
 
 test "Timer functionality" {
     const timer = Timer.start();
-    std.time.sleep(1000); // 1 microsecond
+    std.Thread.sleep(1000); // 1 microsecond
     const elapsed = timer.elapsed();
     try std.testing.expect(elapsed >= 0.0);
 }

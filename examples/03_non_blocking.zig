@@ -49,7 +49,7 @@ pub fn main() !void {
 
         // Wait for all sends to complete
         var statuses = try request_manager.waitAll();
-        defer statuses.deinit();
+        defer statuses.deinit(allocator);
 
         std.debug.print("Rank 0: All sends completed, computed sum = {d:.2}\n", .{sum});
     } else if (my_rank == 1) {
@@ -70,7 +70,8 @@ pub fn main() !void {
         while (true) {
             poll_count += 1;
             if (try request_manager.testAll()) |statuses| {
-                defer statuses.deinit();
+                var mut_statuses = statuses;
+                defer mut_statuses.deinit(allocator);
                 std.debug.print("Rank 1: Received after {} polls - data1={any}, data2={any}\n", .{ poll_count, buffer1, buffer2 });
                 break;
             }
