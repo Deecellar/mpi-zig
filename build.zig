@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
     const enable_profiling = b.option(bool, "enable-profiling", "Enable MPI profiling interface") orelse false;
 
     // Create the main MPI wrapper module
-    const mpi_module = b.createModule(.{
+    const mpi_module = b.addModule("mpi", .{
         .root_source_file = b.path("src/mpi_wrapper.zig"),
         .target = target,
         .optimize = optimize,
