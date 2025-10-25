@@ -3,6 +3,7 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
+const Translator = @import("translate_c").Translator;
 
 pub fn build(b: *std.Build) void {
     // Standard target and optimization options
@@ -56,6 +57,8 @@ pub fn build(b: *std.Build) void {
         const exe = b.addExecutable(.{
             .name = b.fmt("mpi-example-{s}", .{example.name}),
             .root_module = exe_module,
+            .use_lld = true,
+            .use_llvm = true,
         });
 
         // Link MPI and add module
@@ -117,7 +120,14 @@ fn configureMpi(b: *std.Build, module: *std.Build.Module, mpi_path: []const u8, 
     // Add MPI include path (handle Windows case sensitivity)
     const include_path_unix = b.fmt("{s}/include", .{mpi_path});
     const include_path_windows = b.fmt("{s}/Include", .{mpi_path});
-
+    const translate_c = b.dependency("translate_c", .{});
+    const t: Translator = .init(translate_c, .{
+        .c_source_file = b.addWriteFiles().add("c.h",
+            \\#include <mpi.h>
+        ),
+        .optimize = module.optimize orelse .Debug,
+        .target = module.resolved_target orelse @panic("AAAA"),
+    });
     // Try both variants and use the one that exists
     if (pathExists(b, include_path_windows)) {
         module.addIncludePath(.{ .cwd_relative = include_path_windows });
@@ -177,7 +187,7 @@ fn configureMpi(b: *std.Build, module: *std.Build.Module, mpi_path: []const u8, 
     if (enable_cuda) {
         module.addCMacro("ENABLE_CUDA_AWARE_MPI", "1");
         // Link CUDA runtime if available
-        module.linkSystemLibrary("cudart", .{});
+        module.linkSystemLibrary("cuda", .{});
     }
 
     if (enable_profiling) {
@@ -187,6 +197,11 @@ fn configureMpi(b: *std.Build, module: *std.Build.Module, mpi_path: []const u8, 
     // Suppress C++ bindings warnings
     module.addCMacro("OMPI_SKIP_MPICXX", "1");
     module.addCMacro("MPICH_SKIP_MPICXX", "1");
+
+    for (module.c_macros.items) |val| {
+        t.mod.addCMacro(val[1..], "1");
+    }
+    module.addImport("c", if (!std.mem.eql(u8, mpi_impl, "openmpi")) t.mod else b.createModule(.{ .root_source_file = b.path("src/temporal_openmpi.zig") }));
 }
 
 /// Configure OpenMPI specifically

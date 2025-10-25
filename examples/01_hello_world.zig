@@ -31,7 +31,7 @@ pub fn main() !void {
         const version = try mpi.Environment.getVersion();
         const implementation = mpi.platform.detectMpiImplementation();
 
-        std.debug.print("MPI Version: {}.{}, Implementation: {s}\n", .{ version.version, version.subversion, implementation });
+        std.debug.print("MPI Version: {}.{}, Implementation: {}\n", .{ version.version, version.subversion, implementation });
         std.debug.print("Total processes: {}\n", .{world_size});
     }
 

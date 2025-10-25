@@ -36,9 +36,7 @@
 /// Follows Zig naming conventions: camelCase functions, snake_case variables, PascalCase types
 const std = @import("std");
 const builtin = @import("builtin");
-const c = @cImport({
-    @cInclude("mpi.h");
-});
+const c = @import("c");
 
 /// MPI-specific error types with detailed categorization.
 /// All MPI operations return these errors instead of integer codes.
@@ -136,41 +134,21 @@ inline fn checkMpiResult(result: c_int) MpiError!void {
 
 /// Platform-specific MPI datatype mapping
 fn getMpiDatatypeImpl(comptime T: type) c.MPI_Datatype {
-    if (builtin.os.tag == .windows) {
-        // Windows/MSMPI uses direct constants
-        return switch (T) {
-            i8 => c.MPI_INT8_T,
-            u8 => c.MPI_UINT8_T,
-            i16 => c.MPI_INT16_T,
-            u16 => c.MPI_UINT16_T,
-            i32 => c.MPI_INT32_T,
-            u32 => c.MPI_UINT32_T,
-            i64 => c.MPI_INT64_T,
-            u64 => c.MPI_UINT64_T,
-            f32 => c.MPI_FLOAT,
-            f64 => c.MPI_DOUBLE,
-            c_int => c.MPI_INT,
-            bool => c.MPI_C_BOOL,
-            else => @compileError("Unsupported MPI datatype for type: " ++ @typeName(T)),
-        };
-    } else {
-        // OpenMPI on Linux uses global variables
-        return switch (T) {
-            i8 => @ptrCast(&c.ompi_mpi_int8_t),
-            u8 => @ptrCast(&c.ompi_mpi_uint8_t),
-            i16 => @ptrCast(&c.ompi_mpi_int16_t),
-            u16 => @ptrCast(&c.ompi_mpi_uint16_t),
-            i32 => @ptrCast(&c.ompi_mpi_int32_t),
-            u32 => @ptrCast(&c.ompi_mpi_uint32_t),
-            i64 => @ptrCast(&c.ompi_mpi_int64_t),
-            u64 => @ptrCast(&c.ompi_mpi_uint64_t),
-            f32 => @ptrCast(&c.ompi_mpi_float),
-            f64 => @ptrCast(&c.ompi_mpi_double),
-            c_int => @ptrCast(&c.ompi_mpi_int),
-            bool => @ptrCast(&c.ompi_mpi_c_bool),
-            else => @compileError("Unsupported MPI datatype for type: " ++ @typeName(T)),
-        };
-    }
+    return switch (T) {
+        i8 => c.MPI_INT8_T,
+        u8 => c.MPI_UINT8_T,
+        i16 => c.MPI_INT16_T,
+        u16 => c.MPI_UINT16_T,
+        i32 => c.MPI_INT32_T,
+        u32 => c.MPI_UINT32_T,
+        i64 => c.MPI_INT64_T,
+        u64 => c.MPI_UINT64_T,
+        f32 => c.MPI_FLOAT,
+        f64 => c.MPI_DOUBLE,
+        c_int => c.MPI_INT,
+        bool => c.MPI_C_BOOL,
+        else => @compileError("Unsupported MPI datatype for type: " ++ @typeName(T)),
+    };
 }
 
 /// Maps Zig types to corresponding MPI datatypes at compile time.
@@ -193,83 +171,43 @@ pub const ThreadSupport = enum(c_int) {
 /// Platform-specific MPI operation mapping
 const MpiOps = struct {
     pub fn getMax() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_MAX;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_max);
-        }
+        return  c.MPI_MAX;
     }
-    
+
     pub fn getMin() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_MIN;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_min);
-        }
+        return  c.MPI_MIN;
     }
-    
+
     pub fn getSum() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_SUM;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_sum);
-        }
+        return  c.MPI_SUM;
     }
-    
+
     pub fn getProd() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_PROD;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_prod);
-        }
+        return  c.MPI_PROD;
     }
-    
+
     pub fn getLand() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_LAND;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_land);
-        }
+        return  c.MPI_LAND;
     }
-    
+
     pub fn getBand() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_BAND;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_band);
-        }
+        return  c.MPI_BAND;
     }
-    
+
     pub fn getLor() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_LOR;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_lor);
-        }
+        return  c.MPI_LOR;
     }
-    
+
     pub fn getBor() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_BOR;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_bor);
-        }
+        return  c.MPI_BOR;
     }
-    
+
     pub fn getLxor() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_LXOR;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_lxor);
-        }
+        return  c.MPI_LXOR;
     }
-    
+
     pub fn getBxor() c.MPI_Op {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_BXOR;
-        } else {
-            return @ptrCast(&c.ompi_mpi_op_bxor);
-        }
+        return  c.MPI_BXOR;
     }
 };
 
@@ -449,21 +387,11 @@ pub const CommParams = struct {
 /// Platform-specific MPI constants abstraction
 const MpiConstants = struct {
     pub fn getCommWorld() c.MPI_Comm {
-        if (builtin.os.tag == .windows) {
-            // Windows/MSMPI uses direct constants
-            return c.MPI_COMM_WORLD;
-        } else {
-            // OpenMPI on Linux uses global variables
-            return @ptrCast(&c.ompi_mpi_comm_world);
-        }
+        return  c.MPI_COMM_WORLD();
     }
-    
+
     pub fn getCommSelf() c.MPI_Comm {
-        if (builtin.os.tag == .windows) {
-            return c.MPI_COMM_SELF;
-        } else {
-            return @ptrCast(&c.ompi_mpi_comm_self);
-        }
+        return  c.MPI_COMM_SELF;
     }
 };
 
@@ -806,32 +734,40 @@ pub const convenience = struct {
 
 /// Platform-specific optimizations and compatibility
 pub const platform = struct {
+    pub const PlatformImplementation = enum {
+        OpenMPI,
+        MPICH,
+        @"Intel MPI",
+        @"Microsoft MPI",
+        Unknown,
+    };
+
     /// Detect MPI implementation at compile time if possible
-    pub fn detectMpiImplementation() []const u8 {
+    pub fn detectMpiImplementation() PlatformImplementation {
         // Try to detect based on compile-time defines
         if (@hasDecl(c, "OPEN_MPI")) {
-            return "OpenMPI";
+            return .OpenMPI;
         } else if (@hasDecl(c, "MPICH_VERSION")) {
-            return "MPICH";
+            return .MPICH;
         } else if (@hasDecl(c, "I_MPI_VERSION")) {
-            return "Intel MPI";
+            return .@"Intel MPI";
         } else if (builtin.os.tag == .windows) {
-            return "Microsoft MPI";
+            return .@"Microsoft MPI";
         } else {
-            return "Unknown";
+            return .Unknown;
         }
     }
 
     /// Get implementation-specific optimizations
     pub fn getOptimizations() struct { supports_cuda: bool, supports_rdma: bool, max_message_size: usize } {
         const impl = detectMpiImplementation();
-        if (std.mem.eql(u8, impl, "OpenMPI")) {
+        if (impl == .OpenMPI) {
             return .{
                 .supports_cuda = true,
                 .supports_rdma = true,
                 .max_message_size = 2 * 1024 * 1024 * 1024 - 1, // ~2GB
             };
-        } else if (std.mem.eql(u8, impl, "MPICH")) {
+        } else if (impl == .MPICH) {
             return .{
                 .supports_cuda = false,
                 .supports_rdma = true,
