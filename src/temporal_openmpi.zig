@@ -755,16 +755,16 @@ pub extern var ompi_mpi_c_double_complex : struct_ompi_predefined_datatype_t; //
 pub extern var ompi_mpi_c_long_double_complex : struct_ompi_predefined_datatype_t; // /usr/include/mpi.h:1160:56
 pub const struct_ompi_predefined_errhandler_t = opaque {};
 pub extern var ompi_mpi_errhandler_null: struct_ompi_predefined_errhandler_t;
-pub const ompi_mpi_errors_are_fatal = @compileError("local variable has opaque type"); // /usr/include/mpi.h:1163:58
-pub const ompi_mpi_errors_abort = @compileError("local variable has opaque type"); // /usr/include/mpi.h:1164:58
-pub const ompi_mpi_errors_return = @compileError("local variable has opaque type"); // /usr/include/mpi.h:1165:58
+pub extern var ompi_mpi_errors_are_fatal : struct_ompi_predefined_errhandler_t; // /usr/include/mpi.h:1163:58
+pub extern var ompi_mpi_errors_abort : struct_ompi_predefined_errhandler_t; // /usr/include/mpi.h:1164:58
+pub extern var ompi_mpi_errors_return : struct_ompi_predefined_errhandler_t; // /usr/include/mpi.h:1165:58
 pub const struct_ompi_predefined_win_t = opaque {};
 pub extern var ompi_mpi_win_null: struct_ompi_predefined_win_t;
 pub const struct_ompi_predefined_file_t = opaque {};
 pub extern var ompi_mpi_file_null: struct_ompi_predefined_file_t;
 pub const struct_ompi_predefined_info_t = opaque {};
 pub extern var ompi_mpi_info_null: struct_ompi_predefined_info_t;
-pub const ompi_mpi_info_env = @compileError("local variable has opaque type"); // /usr/include/mpi.h:1171:52
+pub extern var ompi_mpi_info_env : struct_ompi_predefined_info_t; // /usr/include/mpi.h:1171:52
 pub extern var MPI_F_STATUS_IGNORE: [*c]c_int;
 pub extern var MPI_F_STATUSES_IGNORE: [*c]c_int;
 pub extern var MPI_F08_STATUS_IGNORE: [*c]c_int;

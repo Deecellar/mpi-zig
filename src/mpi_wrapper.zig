@@ -402,6 +402,11 @@ pub const Communicator = struct {
     pub const world = Communicator{ .comm = MpiConstants.getCommWorld() };
     pub const self_comm = Communicator{ .comm = MpiConstants.getCommSelf() };
 
+    pub fn init(communicator: c.MPI_Comm) !Communicator {
+        try checkMpiResult(c.MPI_Comm_set_errhandler(communicator, c.MPI_ERRORS_RETURN));
+        return .{ .comm = communicator };
+    } 
+
     /// Get process rank
     pub fn getRank(self: Communicator) MpiError!i32 {
         var process_rank: c_int = undefined;
@@ -612,6 +617,8 @@ pub const Environment = struct {
     /// Initialize MPI environment
     pub fn init(self: *Environment) MpiError!void {
         try checkMpiResult(c.MPI_Init(null, null));
+        try checkMpiResult(c.MPI_Comm_set_errhandler(Communicator.world.comm, c.MPI_ERRORS_RETURN));
+        try checkMpiResult(c.MPI_Comm_set_errhandler(Communicator.self_comm.comm, c.MPI_ERRORS_RETURN));
         self.is_initialized = true;
         self.thread_support = .single;
     }
