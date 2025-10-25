@@ -116,7 +116,7 @@ pub fn build(b: *std.Build) void {
 }
 
 /// Configure MPI linking based on implementation and platform
-fn configureMpi(b: *std.Build, module: *std.Build.Module, mpi_path: []const u8, mpi_impl: []const u8, enable_cuda: bool, enable_profiling: bool) void {
+pub fn configureMpi(b: *std.Build, module: *std.Build.Module, mpi_path: []const u8, mpi_impl: []const u8, enable_cuda: bool, enable_profiling: bool) void {
     // Add MPI include path (handle Windows case sensitivity)
     const include_path_unix = b.fmt("{s}/include", .{mpi_path});
     const include_path_windows = b.fmt("{s}/Include", .{mpi_path});
