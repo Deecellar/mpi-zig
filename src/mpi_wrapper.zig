@@ -853,6 +853,8 @@ pub const testing = struct {
     pub fn expectMpiSuccess(result: anytype) !void {
         if (@TypeOf(result) == MpiError!void) {
             try result;
+        } else if(@TypeOf(result) == void) {
+            return;
         } else {
             _ = try result;
         }

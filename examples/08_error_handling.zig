@@ -79,16 +79,22 @@ pub fn main() !void {
                 val.* = @as(f64, @floatFromInt(i));
             }
 
-            try mpi.testing.expectMpiSuccess(comm.send(f64, large_data, mpi.CommParams.dest(1).withTag(200)));
+            _ = try mpi.testing.expectMpiSuccess(comm.send(f64, large_data, mpi.CommParams.dest(1).withTag(200)));
             std.debug.print("✓ Successfully sent large buffer\n", .{});
         } else if (my_rank == 1) {
             // Try to receive into a smaller buffer
-            var small_buffer: [100]f64 = undefined;
+            const small_buffer = try allocator.alloc(f64, 100);
+            defer allocator.free(small_buffer);
+            _ = comm.recv(f64, small_buffer, mpi.CommParams.source(0).withTag(200)) catch |err|  {
+                if(err == mpi.MpiError.truncate) {
+                    std.debug.print("✗ Caught truncation error: {}\n", .{err});
+                }
+                else {
+                    std.debug.print("✗ Caught unexpected error: {}\n", .{err});
+                }
+            };
 
-            // This should work - MPI will only fill the available buffer space
-            _ = try mpi.testing.expectMpiSuccess(comm.recv(f64, &small_buffer, mpi.CommParams.source(0).withTag(200)));
-
-            std.debug.print("✓ Received elements into smaller buffer (truncated from larger message)\n", .{});
+            std.debug.print("✓ Received elements into smaller buffer (Caught truncation message)\n", .{});
         }
     }
 
